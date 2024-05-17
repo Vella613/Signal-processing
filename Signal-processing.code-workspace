@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "battleship",
+			"path": "../../../embedded_systems/Schiffe_versenken/battleship_platformio/battleship"
+		}
+	],
+	"settings": {}
+}
