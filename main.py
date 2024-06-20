@@ -223,32 +223,32 @@ def  main():
 
     '-----------------------------------Spectrogram----------------------------------'
 
-    engine_speed_np = engine_speed.values.astype(np.float32)  # Convert to numpy array
-    # Set parameters for spectrogram computation
+    # engine_speed_np = engine_speed.values.astype(np.float32)  # Convert to numpy array
+    # # Set parameters for spectrogram computation
 
-    fs = Functions.sampling_rate  # Sampling frequency
-    nperseg = 256  # Length of each segment
-    noverlap = 128  # Overlap between segments
+    # fs = Functions.sampling_rate  # Sampling frequency
+    # nperseg = 256  # Length of each segment
+    # noverlap = 128  # Overlap between segments
 
-    # nfft = min(2048, len(engine_speed_np))  # Choose nfft dynamically based on signal length
+    # # nfft = min(2048, len(engine_speed_np))  # Choose nfft dynamically based on signal length
 
-    signal_length = len(engine_speed)
+    # signal_length = len(engine_speed)
 
-    # Choose an appropriate NFFT value, for example, half of the signal length
-    nfft = min(2048, signal_length // 2)
+    # # Choose an appropriate NFFT value, for example, half of the signal length
+    # nfft = min(2048, signal_length // 2)
   
-    # f, t, Sxx = signal.spectrogram(engine_speed, fs, return_onesided=False)
-    print('length of engine speed signal',len(engine_speed))
+    # # f, t, Sxx = signal.spectrogram(engine_speed, fs, return_onesided=False)
+    # print('length of engine speed signal',len(engine_speed))
 
-    Functions.plot_spectrogram(time,data,fs)
+    # Functions.plot_spectrogram(time,data,fs)
 
-    # plt.pcolormesh(t, fftshift(f), fftshift(Sxx, axes=0), shading='gouraud')
-    plt.title('Spectrogram')
-    plt.ylabel('Frequency [Hz]')
-    plt.xlabel('Time [sec]')
-    plt.tight_layout()
+    # # plt.pcolormesh(t, fftshift(f), fftshift(Sxx, axes=0), shading='gouraud')
+    # plt.title('Spectrogram')
+    # plt.ylabel('Frequency [Hz]')
+    # plt.xlabel('Time [sec]')
+    # plt.tight_layout()
 
-    plt.show()
+    # plt.show()
         # while(1):
     #     pass
 
@@ -268,13 +268,40 @@ def  main():
 
     print(features)
     '---------------------Wavelet Transform for engine_speed---------------------'
+    # scales = np.arange(1, 129)
+    # coefficients, frequencies = pywt.cwt(data['engine_speed'], scales, 'cmor1.5-1.0')
 
-    coeffs, freqs = pywt.cwt(engine_speed, scales=np.arange(1, 128), wavelet='morl')
+    # # coeffs, freqs = pywt.cwt(engine_speed, scales=np.arange(1, 128), wavelet='morl')
 
-    # Plot Wavelet coefficients
+    # # Plot Wavelet coefficients
+    # plt.figure(figsize=(10, 6))
+    # plt.imshow(coefficients, extent=[0, len(engine_speed), 1, 128], cmap='PRGn', aspect='auto',
+    #         vmax=abs(coefficients).max(), vmin=-abs(coefficients).max())
+    # plt.colorbar()
+    # plt.title('Engine Speed Wavelet Transform Coefficients')
+    # plt.xlabel('Time')
+    # plt.ylabel('Scale')
+    # plt.tight_layout()
+    # plt.show()
+    # Convert to DataFrame
+    df = pd.DataFrame(data)
+
+    # Perform Continuous Wavelet Transform (CWT)
+    scales = np.arange(1, 129)
+    coefficients, frequencies = pywt.cwt(df['engine_speed'], scales, 'cmor1.5-1.0')
+
+    # Convert coefficients to absolute values
+    abs_coefficients = np.abs(coefficients)
+
+    # Save the absolute coefficients to a CSV file
+    coeff_df = pd.DataFrame(abs_coefficients)
+    coeff_file_path = 'absolute_wavelet_coefficients.csv'
+    coeff_df.to_csv(coeff_file_path, index=False)
+
+    # Plot the magnitude of Wavelet coefficients
     plt.figure(figsize=(10, 6))
-    plt.imshow(coeffs, extent=[0, len(engine_speed), 1, 128], cmap='PRGn', aspect='auto',
-            vmax=abs(coeffs).max(), vmin=-abs(coeffs).max())
+    plt.imshow(np.abs(coefficients), extent=[0, len(df['engine_speed']), 1, 128], cmap='PRGn', aspect='auto',
+            vmax=abs(coefficients).max(), vmin=-abs(coefficients).max())
     plt.colorbar()
     plt.title('Engine Speed Wavelet Transform Coefficients')
     plt.xlabel('Time')
