@@ -25,7 +25,7 @@ def plot_spektrogramm(y, sr, titel="Spektrogramm"):
 
 def finde_grundfrequenz(y, sr, nperseg=2048):
     f, Pxx = welch(y, sr, nperseg=nperseg)
-    peaks, _ = find_peaks(Pxx, height=np.max(Pxx) * 0.1)  # Grundfrequenzen mit signifikanter Amplitude
+    peaks, _ = find_peaks(Pxx, height=np.max(Pxx) * 0.05)  # Grundfrequenzen mit signifikanter Amplitude
     if len(peaks) > 0:
         grundfrequenz = f[peaks[0]]
     else:
@@ -47,7 +47,7 @@ def berechne_drehzahl(grundfrequenz, zylinder=6, takte=4, korrekturfaktor=0):
     drehzahl -= korrekturfaktor  # Korrekturfaktor anwenden
     return drehzahl
 
-def spektralanalyse_und_drehzahl(dateipfad, zylinder=4, takte=4, korrekturfaktor=200, csv_dateipfad="drehzahl_daten.csv"):
+def spektralanalyse_und_drehzahl(dateipfad, zylinder=6, takte=4, korrekturfaktor=200, csv_dateipfad="drehzahl_daten.csv"):
     y, sr = lade_audio(dateipfad)
     if y is None or sr is None:
         return
@@ -86,4 +86,4 @@ def spektralanalyse_und_drehzahl(dateipfad, zylinder=4, takte=4, korrekturfaktor
 dateipfad = "C:\\Users\\User\\Documents\\MCI\\Machinelearing_DataScience\\Project\\Signal-processing\\audio_files\\bmw.mp3"
 
 # Durchführung der Spektralanalyse und Drehzahlschätzung
-spektralanalyse_und_drehzahl(dateipfad, zylinder=4, takte=4, korrekturfaktor=000, csv_dateipfad="drehzahl_daten.csv")
+spektralanalyse_und_drehzahl(dateipfad, zylinder=6, takte=4, korrekturfaktor=000, csv_dateipfad="drehzahl_daten.csv")
