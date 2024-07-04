@@ -5,85 +5,90 @@ import numpy as np
 from scipy.signal import welch, find_peaks
 import csv
 
-def lade_audio(dateipfad):
+def load_audio(filepath):
+    """Load the audio file from the given filepath."""
     try:
-        y, sr = librosa.load(dateipfad, sr=None)
-        print("Datei wurde erfolgreich geladen")
+        y, sr = librosa.load(filepath, sr=None)
+        print("File loaded successfully")
         return y, sr
     except Exception as e:
-        print(f"Datei konnte nicht geladen werden: {e}")
+        print(f"File could not be loaded: {e}")
         return None, None
 
-def plot_spektrogramm(y, sr, titel="Spektrogramm"):
+def plot_spectrogram(y, sr, title="Spectrogram"):
+    """Plot the spectrogram of the audio signal."""
     plt.figure(figsize=(10, 6))
     S = librosa.stft(y)
     S_db = librosa.amplitude_to_db(abs(S))
     librosa.display.specshow(S_db, sr=sr, x_axis='time', y_axis='log')
     plt.colorbar(format='%+2.0f dB')
-    plt.title(titel)
+    plt.title(title)
     plt.show()
 
-def finde_grundfrequenz(y, sr, nperseg=2048):
+def find_fundamental_frequency(y, sr, nperseg=2048):
+    """Find the fundamental frequency of the audio signal using Welch's method."""
     f, Pxx = welch(y, sr, nperseg=nperseg)
-    peaks, _ = find_peaks(Pxx, height=np.max(Pxx) * 0.05)  # Grundfrequenzen mit signifikanter Amplitude
+    peaks, _ = find_peaks(Pxx, height=np.max(Pxx) * 0.05)  # Fundamental frequencies with significant amplitude
     if len(peaks) > 0:
-        grundfrequenz = f[peaks[0]]
+        fundamental_frequency = f[peaks[0]]
     else:
-        grundfrequenz = None
-    return grundfrequenz
+        fundamental_frequency = None
+    return fundamental_frequency
 
-def berechne_drehzahl(grundfrequenz, zylinder=6, takte=4, korrekturfaktor=0):
-    if grundfrequenz is None:
+def calculate_rpm(fundamental_frequency, cylinders=6, strokes=4, correction_factor=0):
+    """Calculate the RPM from the fundamental frequency."""
+    if fundamental_frequency is None:
         return None
-    if takte == 4:
-        k = 2  # Jeder Zylinder zündet einmal pro zwei Umdrehungen (bei 4-Takt-Motoren)
-    elif takte == 2:
-        k = 1  # Jeder Zylinder zündet einmal pro Umdrehung (bei 2-Takt-Motoren)
+    if strokes == 4:
+        k = 2  # Each cylinder fires once every two revolutions (for 4-stroke engines)
+    elif strokes == 2:
+        k = 1  # Each cylinder fires once per revolution (for 2-stroke engines)
     else:
-        raise ValueError("Nur 2-Takt oder 4-Takt-Motoren werden unterstützt")
+        raise ValueError("Only 2-stroke or 4-stroke engines are supported")
     
-    # Die Grundfrequenz ist die Anzahl der Zündungen pro Sekunde. Um die Drehzahl zu berechnen:
-    drehzahl = grundfrequenz * 60 / (zylinder / k)
-    drehzahl -= korrekturfaktor  # Korrekturfaktor anwenden
-    return drehzahl
+    # The fundamental frequency is the number of firings per second. To calculate RPM:
+    rpm = fundamental_frequency * 60 / (cylinders / k)
+    rpm -= correction_factor  # Apply correction factor
+    return rpm
 
-def spektralanalyse_und_drehzahl(dateipfad, zylinder=6, takte=4, korrekturfaktor=200, csv_dateipfad="drehzahl_daten.csv"):
-    y, sr = lade_audio(dateipfad)
+def spectral_analysis_and_rpm(filepath, cylinders=6, strokes=4, correction_factor=200, csv_filepath="rpm_data.csv"):
+    """Perform spectral analysis and RPM estimation from the audio file."""
+    y, sr = load_audio(filepath)
     if y is None or sr is None:
         return
 
-    plot_spektrogramm(y, sr, titel="Spektrogramm des Audiosignals")
+    plot_spectrogram(y, sr, title="Spectrogram of the Audio Signal")
 
-    seg_dauer = 0.5  # Länge des Zeitabschnitts in Sekunden
-    seg_samples = int(seg_dauer * sr)
-    drehzahlen = []
+    seg_duration = 0.5  # Length of the time segment in seconds
+    seg_samples = int(seg_duration * sr)
+    rpms = []
 
     for start in range(0, len(y), seg_samples):
-        ende = start + seg_samples
-        if ende > len(y):
+        end = start + seg_samples
+        if end > len(y):
             break
-        segment = y[start:ende]
-        grundfrequenz = finde_grundfrequenz(segment, sr)
-        drehzahl = berechne_drehzahl(grundfrequenz, zylinder, takte, korrekturfaktor)
-        drehzahlen.append(drehzahl)
+        segment = y[start:end]
+        fundamental_frequency = find_fundamental_frequency(segment, sr)
+        rpm = calculate_rpm(fundamental_frequency, cylinders, strokes, correction_factor)
+        rpms.append(rpm)
 
-    # Drehzahlen in CSV schreiben
-    with open(csv_dateipfad, mode='w', newline='') as file:
+    # Write RPM data to CSV
+    with open(csv_filepath, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Zeit (s)", "Drehzahl (U/min)"])
-        for i, drehzahl in enumerate(drehzahlen):
-            writer.writerow([i * seg_dauer, drehzahl])
+        writer.writerow(["Time (s)", "RPM"])
+        for i, rpm in enumerate(rpms):
+            writer.writerow([i * seg_duration, rpm])
     
     plt.figure(figsize=(12, 6))
-    plt.plot(np.arange(len(drehzahlen)) * seg_dauer, drehzahlen, marker='o')
-    plt.title('Geschätzte Drehzahl über die Zeit')
-    plt.xlabel('Zeit (s)')
-    plt.ylabel('Drehzahl (U/min)')
+    plt.plot(np.arange(len(rpms)) * seg_duration, rpms, marker='o')
+    plt.title('Estimated RPM over Time')
+    plt.xlabel('Time (s)')
+    plt.ylabel('RPM')
     plt.grid(True)
     plt.show()
 
-# Pfad zur MP3-Datei
-dateipfad = "C:\\Users\\User\\Documents\\MCI\\Machinelearing_DataScience\\Project\\Signal-processing\\audio_files\\bmw_short.mp3"
+# Path to the MP3 file
+filepath = "C:\\Users\\User\\Documents\\MCI\\Machinelearing_DataScience\\Project\\Signal-processing\\audio_files\\bmw_short.mp3"
 
-# Durchführung der Spektralanalyse und Drehzahlschätzung
-spektralanalyse_und_drehzahl(dateipfad, zylinder=6, takte=4, korrekturfaktor=000, csv_dateipfad="drehzahl_daten.csv")
+# Perform spectral analysis and RPM estimation
+spectral_analysis_and_rpm(filepath, cylinders=6, strokes=4, correction_factor=200, csv_filepath="rpm_data.csv")
